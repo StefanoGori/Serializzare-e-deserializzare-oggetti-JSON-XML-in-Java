@@ -5,6 +5,7 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.io.PrintWriter;
@@ -12,6 +13,10 @@ import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.Date;
 import java.util.StringTokenizer;
+
+import com.fasterxml.jackson.core.JsonParseException;
+import com.fasterxml.jackson.databind.JsonMappingException;
+import com.fasterxml.jackson.dataformat.xml.XmlMapper;
 
 // The tutorial can be found just here on the SSaurel's Blog : 
 // https://www.ssaurel.com/blog/create-a-simple-http-web-server-in-java
@@ -22,6 +27,9 @@ public class webSRV implements Runnable{
 	static final String DEFAULT_FILE = "/src/main/resources/index.html";
 	static final String FILE_NOT_FOUND = "/src/main/resources/404.html";
 	static final String METHOD_NOT_SUPPORTED = "/src/main/resources/not_supported.html";
+	static final String DEFAULT_FILE_XML="src/main/resources/classe.xml";
+	static final String DEFAULT_FILE_JSON="src/main/resources/puntiVendita.json";
+	XmlMapper xmlMapper=new XmlMapper();
 	// port to listen connection
 	static final int PORT = 8080;
 	
@@ -109,6 +117,14 @@ public class webSRV implements Runnable{
 				// GET or HEAD method
 				if (fileRequested.endsWith("/")) {
 					fileRequested += DEFAULT_FILE;
+				}
+				else if(fileRequested.endsWith(".json")){
+					File file=new File("src/main/resources/classe.xml");
+					String xml = inputStreamToString(new FileInputStream(file));
+					
+				}
+				else if(fileRequested.endsWith(".xml")){
+
 				}
 				
 				File file = new File(WEB_ROOT, fileRequested);
@@ -231,5 +247,15 @@ public class webSRV implements Runnable{
 			System.out.println("File " + fileRequested + " not found");
 		}
 	}
+	public static String inputStreamToString(InputStream is) throws IOException {
+        StringBuilder sb = new StringBuilder();
+        String line;
+        BufferedReader br = new BufferedReader(new InputStreamReader(is));
+        while ((line = br.readLine()) != null) {
+            sb.append(line);
+        }
+        br.close();
+        return sb.toString();
+    }
 	
 }
