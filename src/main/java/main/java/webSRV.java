@@ -11,11 +11,13 @@ import java.io.OutputStream;
 import java.io.PrintWriter;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.Date;
 import java.util.StringTokenizer;
 
-import com.fasterxml.jackson.core.JsonParseException;
-import com.fasterxml.jackson.databind.JsonMappingException;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.xml.XmlMapper;
 
 // The tutorial can be found just here on the SSaurel's Blog : 
@@ -24,12 +26,13 @@ import com.fasterxml.jackson.dataformat.xml.XmlMapper;
 public class webSRV implements Runnable{ 
 	
 	static final File WEB_ROOT = new File(".");
-	static final String DEFAULT_FILE = "/src/main/resources/index.html";
-	static final String FILE_NOT_FOUND = "/src/main/resources/404.html";
-	static final String METHOD_NOT_SUPPORTED = "/src/main/resources/not_supported.html";
+	static final String DEFAULT_FILE = "src/main/resources/index.html";
+	static final String FILE_NOT_FOUND = "src/main/resources/404.html";
+	static final String METHOD_NOT_SUPPORTED = "src/main/resources/not_supported.html";
 	static final String DEFAULT_FILE_XML="src/main/resources/classe.xml";
-	static final String DEFAULT_FILE_JSON="src/main/resources/puntiVendita.json";
+	static final String DEFAULT_FILE_JSON="src/main/resources/puntoVendita.json";
 	XmlMapper xmlMapper=new XmlMapper();
+	ObjectMapper objectMapper=new ObjectMapper();
 	// port to listen connection
 	static final int PORT = 8080;
 	
@@ -113,26 +116,38 @@ public class webSRV implements Runnable{
 				dataOut.write(fileData, 0, fileLength);
 				dataOut.flush();
 				
-			} else {
+			} 
+			else {
+				int fileLength=0;
+				byte[] fileData=null;
 				// GET or HEAD method
 				if (fileRequested.endsWith("/")) {
 					fileRequested += DEFAULT_FILE;
 				}
-				else if(fileRequested.endsWith(".json")){
-					File file=new File("src/main/resources/classe.xml");
-					String xml = inputStreamToString(new FileInputStream(file));
-					
+				if(fileRequested.endsWith("/classe.json")){
+					String readContent = new String(Files.readAllBytes(Paths.get("src/main/resources/classe.xml")));
+					root deserializedData = xmlMapper.readValue(readContent, root.class);
+					String Json=objectMapper.writeValueAsString(deserializedData);
+					fileLength = Json.length();
+					fileData = Json.getBytes();
 				}
-				else if(fileRequested.endsWith(".xml")){
-
+				else if(fileRequested.endsWith("/punto-vendita.xml")){
+					String readContent = new String(Files.readAllBytes(Paths.get("src/main/resources/puntiVendita.json")));
+					ObjectMapper json_mapper=new ObjectMapper();
+					puntoVendita deserializedData = json_mapper.readValue(readContent, puntoVendita.class);
+					XmlMapper XmlMapper=new XmlMapper();
+					String Json=XmlMapper.writeValueAsString(deserializedData);
+					fileLength = Json.length();
+					fileData = Json.getBytes();
 				}
-				
-				File file = new File(WEB_ROOT, fileRequested);
-				int fileLength = (int) file.length();
+				else {
+					File file = new File(WEB_ROOT, fileRequested);
+					fileLength = (int) file.length();
+					fileData = readFileData(file, fileLength);
+				}
 				String content = getContentType(fileRequested);
 				
 				if (method.equals("GET")) { // GET method so we return content
-					byte[] fileData = readFileData(file, fileLength);
 					
 					// send HTTP Headers
 					out.println("HTTP/1.1 200 OK");
